@@ -13,6 +13,9 @@ static void check(Compactor& c, const std::string_view& ref)
         int n = std::snprintf(buf.data(), buf.size(), "expected: %s; got: %s", ref.data(), dec.data());
         throw std::runtime_error(std::string(buf.data(), n));
     }
+    if (ref.size() > 0) {
+        std::cout << "saved " << (100 - static_cast<int>(100 * enc.size() / ref.size())) << "% on " << ref << std::endl;
+    }
 }
 
 static void check_encode(const std::string_view& str, const std::string_view& ref)
@@ -76,6 +79,7 @@ int main(int /*argc*/, char* /*argv*/[])
 
     murify::QueryCompactor qc;
     check(qc, "");
+    check(qc, "value");
     check(qc, "key=0");
     check(qc, "key=4294967295");
     check(qc, "key=18446744073709551615");
@@ -84,8 +88,9 @@ int main(int /*argc*/, char* /*argv*/[])
     check(qc, "&key=&");
     check(qc, "auth=eyJh..eyJh");
     check(qc, "auth=eyJh.abc.eyJh");
-    check(qc, "auth=eyJh.????.eyJh");
+    check(qc, "auth=eyJh.@bc.eyJh");
     check(qc, "auth=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c");
+    check(qc, "sig=SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c");
 
     return 0;
 }

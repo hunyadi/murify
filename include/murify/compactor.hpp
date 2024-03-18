@@ -26,8 +26,9 @@ namespace murify
      * 0 1  0 0  1  w w w  --> string of size expressed in width w, followed by characters
      * 0 1  1 0  0  - - -  --> [unused]
      * 0 1  1 0  1  w w w  --> interned string index expressed in width w
-     * 0 1  0 1  c  c c c  --> encapsulated data (e.g. UUID)
-     * 0 1  1 1  s  s s s  --> base64-encoded string of size s
+     * 0 1  0 1  c  c c c  --> encapsulated data (e.g. JWT or UUID)
+     * 0 1  1 1  0  - - -  --> [unused]
+     * 0 1  1 1  1  w w w  --> base64-encoded string of size expressed in width w
      * 1 0  i i  i  i i i  --> embedded interned string with index i
      * 1 1  s s  s  s s s  --> string of embedded size s, followed by characters
      * ```
@@ -52,6 +53,7 @@ namespace murify
     protected:
         void compact_interned(std::basic_string<std::byte>& out, const std::string_view& part);
         void compact_string(std::basic_string<std::byte>& out, const std::string_view& part);
+        bool compact_base64(std::basic_string<std::byte>& out, const std::string_view& part);
         bool compact_jwt(std::basic_string<std::byte>& out, const std::string_view& part);
         std::size_t expand_single(std::string& out, const std::basic_string_view<std::byte>& enc);
         std::size_t expand_jwt(std::string& out, const std::basic_string_view<std::byte>& enc);
@@ -115,7 +117,7 @@ namespace murify
                     out.push_back(control.value);
                 } else {
                     // integer with explicitly specified width and value
-                    unsigned width = get_integer_width(number);
+                    unsigned int width = get_integer_width(number);
 
                     control_byte control;
                     control.prefixed_value.embedding = Embedding::none;
@@ -136,10 +138,13 @@ namespace murify
             }
 
             // JWT
-            if (part.size() >= 2 && part[0] == 'e' && part[1] == 'y') {
-                if (compact_jwt(out, part)) {
-                    continue;
-                }
+            if (part.size() >= 2 && part[0] == 'e' && part[1] == 'y' && compact_jwt(out, part)) {
+                continue;
+            }
+
+            // base64
+            if (part.size() >= 16 && compact_base64(out, part)) {
+                continue;
             }
 
             // non-intern-able string
@@ -165,7 +170,7 @@ namespace murify
             out.push_back(control.value);
         } else {
             // long string with explicitly specified length
-            auto width = get_integer_width(length);
+            unsigned int width = get_integer_width(length);
 
             control_byte control;
             control.prefixed_value.embedding = Embedding::none;
@@ -198,7 +203,7 @@ namespace murify
             out.push_back(control.value);
         } else {
             // interned string with explicitly specified width and index
-            unsigned width = get_integer_width(index);
+            unsigned int width = get_integer_width(index);
 
             control_byte control;
             control.prefixed_value.embedding = Embedding::none;
@@ -209,6 +214,32 @@ namespace murify
 
             write_integer(out, width, index);
         }
+    }
+
+    template<typename Tokenizer>
+    bool Compactor<Tokenizer>::compact_base64(std::basic_string<std::byte>& out, const std::string_view& part)
+    {
+        using detail::Embedding, detail::Coding, detail::DataType;
+        using detail::control_byte;
+        using detail::copy, detail::get_integer_width, detail::write_integer;
+
+        std::basic_string<std::byte> raw;
+        if (!base64::decode(part, raw)) {
+            return false;
+        }
+        unsigned int length = static_cast<unsigned int>(part.size());
+        unsigned int width = get_integer_width(length);
+
+        control_byte control;
+        control.prefixed_value.embedding = Embedding::none;
+        control.prefixed_value.coding = Coding::base64;
+        control.prefixed_value.data_type = DataType::string;
+        control.prefixed_value.width = width - 1;
+        out.push_back(control.value);
+
+        write_integer(out, width, length);
+        copy(out, base64::byte_to_string(raw));
+        return true;
     }
 
     template<typename Tokenizer>
@@ -335,7 +366,19 @@ namespace murify
                 }
                 break;
             case Coding::base64:
-                throw std::runtime_error("base64 encoding not implemented");
+                width = control.prefixed_value.width + 1;
+                switch (control.prefixed_value.data_type) {
+                case DataType::integer:
+                    throw std::runtime_error("base64 encoding not implemented for integer type");
+                case DataType::string:
+                    // base64 decoded string with externally specified size
+                    length = read_integer(enc.substr(index, width));
+                    index += width;
+                    out = base64::encode(enc.substr(index, length));
+                    index += length;
+                    break;
+                }
+                break;
             case Coding::encapsulated:
                 switch (control.encapsulated_value.identifier)
                 {

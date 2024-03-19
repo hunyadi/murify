@@ -215,6 +215,12 @@ namespace murify
             return target;
         }
 
+        /**
+         * Splits a string into parts along occurrences of the separator character.
+         *
+         * @param in The string to split.
+         * @param sep The character that is separating the parts.
+         */
         inline std::vector<std::string_view> split(const std::string_view& in, char sep)
         {
             std::vector<std::string_view> r;
@@ -228,13 +234,56 @@ namespace murify
             }
         }
 
-        inline std::string join(const std::vector<std::string>& v, char c)
+        /**
+         * Splits a string into parts, including the separator characters.
+         *
+         * @param in The string to split.
+         * @param chars A string of separator characters, which are included in the result.
+         */
+        inline std::vector<std::string_view> tokenize(const std::string_view& in, const char* chars)
+        {
+            std::vector<std::string_view> r;
+            for (std::size_t p = 0; ; ++p) {
+                std::size_t q = p;
+                p = in.find_first_of(chars, q);
+                auto piece = in.substr(q, p - q);
+                if (!piece.empty()) {
+                    r.push_back(piece);
+                }
+                if (p == std::string_view::npos) {
+                    return r;
+                }
+                r.push_back(in.substr(p, 1));
+            }
+        }
+
+        /**
+         * Joins parts into a string.
+         *
+         * @param parts The parts to join.
+         */
+        inline std::string join(const std::vector<std::string>& parts)
         {
             std::string s;
-            for (auto it = v.begin(); it != v.end(); ++it) {
+            for (auto it = parts.begin(); it != parts.end(); ++it) {
                 s += *it;
-                if (it != v.end() - 1) {
-                    s += c;
+            }
+            return s;
+        }
+
+        /**
+         * Joins parts into a string.
+         *
+         * @param parts The parts to join.
+         * @param sep The character that is separating the parts.
+         */
+        inline std::string join(const std::vector<std::string>& parts, char sep)
+        {
+            std::string s;
+            for (auto it = parts.begin(); it != parts.end(); ++it) {
+                s += *it;
+                if (it != parts.end() - 1) {
+                    s += sep;
                 }
             }
             return s;

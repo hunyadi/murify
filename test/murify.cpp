@@ -92,5 +92,47 @@ int main(int /*argc*/, char* /*argv*/[])
     check(qc, "auth=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c");
     check(qc, "sig=SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c");
 
+    murify::URLCompactor uc;
+    check(uc, "g:h");
+    check(uc, "http://a/b/c/g");
+    check(uc, "http://a/b/c/g");
+    check(uc, "http://a/b/c/g/");
+    check(uc, "http://a/g");
+    check(uc, "http://g");
+    check(uc, "http://a/b/c/?y");
+    check(uc, "http://a/b/c/g?y");
+    check(uc, "http://a/b/c/d;p?q#s");
+    check(uc, "http://a/b/c/g#s");
+    check(uc, "http://a/b/c/g?y#s");
+    check(uc, "http://a/b/c/;x");
+    check(uc, "http://a/b/c/g;x");
+    check(uc, "http://a/b/c/g;x?y#s");
+    check(uc, "http://a/b/c/");
+    check(uc, "http://a/b/c/");
+    check(uc, "http://a/b/");
+    check(uc, "http://a/b/");
+    check(uc, "http://a/b/g");
+    check(uc, "http://a/");
+    check(uc, "http://a/");
+    check(uc, "http://a/g");
+    check(uc, "http://a/../g");
+    check(uc, "http://a/../../g");
+    check(uc, "http://a/./g");
+    check(uc, "http://a/../g");
+    check(uc, "http://a/b/c/g.");
+    check(uc, "http://a/b/c/.g");
+    check(uc, "http://a/b/c/g..");
+    check(uc, "http://a/b/c/..g");
+    check(uc, "http://a/b/g");
+    check(uc, "http://a/b/c/g/");
+    check(uc, "http://a/b/c/g/h");
+    check(uc, "http://a/b/c/h");
+    check(uc, "http://a/b/c/g;x=1/y");
+    check(uc, "http://a/b/c/y");
+    check(uc, "http://a/b/c/g?y/./x");
+    check(uc, "http://a/b/c/g?y/../x");
+    check(uc, "http://a/b/c/g#s/./x");
+    check(uc, "http://a/b/c/g#s/../x");
+
     return 0;
 }

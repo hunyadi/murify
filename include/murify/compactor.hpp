@@ -24,7 +24,7 @@ namespace murify
      * 0 0  n n  n  n n n  --> embedded integer with value n
      * 0 1  0 0  0  w w w  --> integer expressed in width w
      * 0 1  0 0  1  w w w  --> string of size expressed in width w, followed by characters
-     * 0 1  1 0  0  - - -  --> [unused]
+     * 0 1  1 0  0  i i i  --> separator character with index i
      * 0 1  1 0  1  w w w  --> interned string index expressed in width w
      * 0 1  0 1  c  c c c  --> encapsulated data (e.g. JWT or UUID)
      * 0 1  1 1  0  - - -  --> [unused]
@@ -51,6 +51,9 @@ namespace murify
         }
 
     protected:
+        constexpr static char separators[] = { ':', '/', '@', '?', '=', '&', '#', ';' };
+
+        bool compact_separator(std::basic_string<std::byte>& out, char sep);
         void compact_interned(std::basic_string<std::byte>& out, const std::string_view& part);
         void compact_string(std::basic_string<std::byte>& out, const std::string_view& part);
         bool compact_base64(std::basic_string<std::byte>& out, const std::string_view& part);
@@ -80,6 +83,15 @@ namespace murify
     struct QueryCompactor : Compactor<QueryTokenizer>
     {};
 
+    struct URLTokenizer : BaseTokenizer
+    {
+        static std::vector<std::string_view> split(const std::string_view& str);
+        static std::string join(const std::vector<std::string>& parts);
+    };
+
+    struct URLCompactor : Compactor<URLTokenizer>
+    {};
+
     template<typename Tokenizer>
     std::basic_string<std::byte> Compactor<Tokenizer>::compact(const std::string_view& str)
     {
@@ -99,8 +111,21 @@ namespace murify
         for (auto it = parts.begin(); it != parts.end(); ++it) {
             auto part = *it;
 
-            // empty string is always interned
             if (part.empty()) {
+                // empty string with embedded length
+                control_byte control;
+                control.embedded_value.embedding = Embedding::string_length;
+                control.embedded_value.value = 0;
+                out.push_back(control.value);
+                continue;
+            }
+
+            if (part.size() == 1) {
+                if (compact_separator(out, part[0])) {
+                    continue;
+                }
+
+                // single char is always interned
                 compact_interned(out, part);
                 continue;
             }
@@ -132,7 +157,7 @@ namespace murify
             }
 
             // intern-able string
-            if (part.size() < 24 && std::all_of(part.begin(), part.end(), [](char c) { return std::islower(c) || c == '_'; })) {
+            if (part.size() < 24 && std::all_of(part.begin(), part.end(), [](char c) { return std::islower(c) || c == '_' || c == '-'; })) {
                 compact_interned(out, part);
                 continue;
             }
@@ -152,6 +177,28 @@ namespace murify
         }
 
         return out;
+    }
+
+    template<typename Tokenizer>
+    bool Compactor<Tokenizer>::compact_separator(std::basic_string<std::byte>& out, char sep)
+    {
+        using detail::Embedding, detail::Coding, detail::DataType;
+        using detail::control_byte;
+
+        for (int k = 0; k < sizeof(separators); ++k) {
+            if (sep != separators[k]) {
+                continue;
+            }
+
+            control_byte control;
+            control.prefixed_value.embedding = Embedding::none;
+            control.prefixed_value.coding = Coding::indexed;
+            control.prefixed_value.data_type = DataType::integer;
+            control.prefixed_value.width = k;
+            out.push_back(control.value);
+            return true;
+        }
+        return false;
     }
 
     template<typename Tokenizer>
@@ -353,12 +400,14 @@ namespace murify
                 }
                 break;
             case Coding::indexed:
-                width = control.prefixed_value.width + 1;
                 switch (control.prefixed_value.data_type) {
                 case DataType::integer:
-                    throw std::runtime_error("indexed coding of integer type is unused");
+                    // embedded separator character index
+                    out = separators[control.prefixed_value.width];
+                    break;
                 case DataType::string:
                     // interned string with externally specified index
+                    width = control.prefixed_value.width + 1;
                     uint32_t string_index = static_cast<uint32_t>(read_integer(enc.substr(index, width)));
                     index += width;
                     out = interned_string(string_index).data(string_store);
@@ -383,6 +432,7 @@ namespace murify
                 switch (control.encapsulated_value.identifier)
                 {
                 case Encapsulation::jwt:
+                    // encapsulated JWT
                     index += expand_jwt(out, enc.substr(index));
                     break;
                 default:
@@ -461,5 +511,15 @@ namespace murify
             pieces.push_back(str);
         }
         return detail::join(pieces, '&');
+    }
+
+    std::vector<std::string_view> URLTokenizer::split(const std::string_view& str)
+    {
+        return detail::tokenize(str, ":/?&=#");
+    }
+
+    std::string URLTokenizer::join(const std::vector<std::string>& parts)
+    {
+        return detail::join(parts);
     }
 }

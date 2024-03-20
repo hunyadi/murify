@@ -1,7 +1,9 @@
 #pragma once
-#include "detail/detail.hpp"
 #include "base64url.hpp"
 #include "interned_string.hpp"
+#include "detail/header.hpp"
+#include "detail/integers.hpp"
+#include "detail/strings.hpp"
 
 #include <string>
 #include <string_view>
@@ -97,7 +99,6 @@ namespace murify
     {
         using detail::Embedding, detail::Coding, detail::DataType, detail::Encapsulation;
         using detail::control_byte;
-        using detail::copy, detail::get_integer_width, detail::write_integer;
 
         if (str.empty()) {
             return std::basic_string<std::byte>();
@@ -142,7 +143,7 @@ namespace murify
                     out.push_back(control.value);
                 } else {
                     // integer with explicitly specified width and value
-                    unsigned int width = get_integer_width(number);
+                    unsigned int width = detail::get_integer_width(number);
 
                     control_byte control;
                     control.prefixed_value.embedding = Embedding::none;
@@ -151,7 +152,7 @@ namespace murify
                     control.prefixed_value.width = width - 1;
                     out.push_back(control.value);
 
-                    write_integer(out, width, number);
+                    detail::write_integer(out, width, number);
                 }
                 continue;
             }
@@ -206,7 +207,6 @@ namespace murify
     {
         using detail::Embedding, detail::Coding, detail::DataType, detail::Encapsulation;
         using detail::control_byte;
-        using detail::copy, detail::get_integer_width, detail::write_integer;
 
         unsigned int length = static_cast<unsigned int>(part.size());
         if (length < 64) {
@@ -217,7 +217,7 @@ namespace murify
             out.push_back(control.value);
         } else {
             // long string with explicitly specified length
-            unsigned int width = get_integer_width(length);
+            unsigned int width = detail::get_integer_width(length);
 
             control_byte control;
             control.prefixed_value.embedding = Embedding::none;
@@ -226,11 +226,11 @@ namespace murify
             control.prefixed_value.width = width - 1;
             out.push_back(control.value);
 
-            write_integer(out, width, length);
+            detail::write_integer(out, width, length);
         }
 
         // characters of string
-        copy(out, part);
+        out.append(detail::string_to_byte(part));
     }
 
     template<typename Tokenizer>
@@ -238,7 +238,6 @@ namespace murify
     {
         using detail::Embedding, detail::Coding, detail::DataType;
         using detail::control_byte;
-        using detail::copy, detail::get_integer_width, detail::write_integer;
 
         interned_string s = string_store.intern(part);
         uint32_t index = s.index();
@@ -250,7 +249,7 @@ namespace murify
             out.push_back(control.value);
         } else {
             // interned string with explicitly specified width and index
-            unsigned int width = get_integer_width(index);
+            unsigned int width = detail::get_integer_width(index);
 
             control_byte control;
             control.prefixed_value.embedding = Embedding::none;
@@ -259,7 +258,7 @@ namespace murify
             control.prefixed_value.width = width - 1;
             out.push_back(control.value);
 
-            write_integer(out, width, index);
+            detail::write_integer(out, width, index);
         }
     }
 
@@ -268,14 +267,13 @@ namespace murify
     {
         using detail::Embedding, detail::Coding, detail::DataType;
         using detail::control_byte;
-        using detail::copy, detail::get_integer_width, detail::write_integer;
 
         std::basic_string<std::byte> raw;
         if (!base64::decode(part, raw)) {
             return false;
         }
         unsigned int length = static_cast<unsigned int>(part.size());
-        unsigned int width = get_integer_width(length);
+        unsigned int width = detail::get_integer_width(length);
 
         control_byte control;
         control.prefixed_value.embedding = Embedding::none;
@@ -284,8 +282,8 @@ namespace murify
         control.prefixed_value.width = width - 1;
         out.push_back(control.value);
 
-        write_integer(out, width, length);
-        copy(out, base64::byte_to_string(raw));
+        detail::write_integer(out, width, length);
+        out.append(raw);
         return true;
     }
 
@@ -294,9 +292,9 @@ namespace murify
     {
         using detail::Embedding, detail::Coding, detail::Encapsulation;
         using detail::control_byte;
-        using detail::split;
+        using detail::byte_to_string;
 
-        auto jwt_parts = split(part, '.');
+        auto jwt_parts = detail::split(part, '.');
         if (jwt_parts.size() != 3) {
             return false;
         }
@@ -320,9 +318,9 @@ namespace murify
         control.encapsulated_value.identifier = Encapsulation::jwt;
         out.push_back(control.value);
 
-        compact_interned(out, base64::byte_to_string(header));
-        compact_string(out, base64::byte_to_string(payload));
-        compact_string(out, base64::byte_to_string(signature));
+        compact_interned(out, byte_to_string(header));
+        compact_string(out, byte_to_string(payload));
+        compact_string(out, byte_to_string(signature));
         return true;
     }
 
@@ -353,7 +351,7 @@ namespace murify
     {
         using detail::Embedding, detail::Coding, detail::DataType, detail::Encapsulation;
         using detail::control_byte;
-        using detail::read_integer, detail::take;
+        using detail::byte_to_string, detail::read_integer;
 
         std::size_t index = 0;
         control_byte control;
@@ -376,7 +374,7 @@ namespace murify
         case Embedding::string_length:
             // string with embedded length
             length = control.embedded_value.value;
-            out = take(enc.substr(index, length));
+            out = byte_to_string(enc.substr(index, length));
             index += length;
             break;
         case Embedding::none:
@@ -394,7 +392,7 @@ namespace murify
                     // string with externally specified length
                     length = read_integer(enc.substr(index, width));
                     index += width;
-                    out = take(enc.substr(index, length));
+                    out = byte_to_string(enc.substr(index, length));
                     index += length;
                     break;
                 }
@@ -448,6 +446,8 @@ namespace murify
     template<typename Tokenizer>
     std::size_t Compactor<Tokenizer>::expand_jwt(std::string& out, const std::basic_string_view<std::byte>& enc)
     {
+        using detail::string_to_byte;
+
         std::string header;
         std::size_t index = expand_single(header, enc);
         std::string payload;
@@ -455,11 +455,11 @@ namespace murify
         std::string signature;
         index += expand_single(signature, enc.substr(index));
 
-        out.append(base64::encode(base64::string_to_byte(header)));
+        out.append(base64::encode(string_to_byte(header)));
         out += '.';
-        out.append(base64::encode(base64::string_to_byte(payload)));
+        out.append(base64::encode(string_to_byte(payload)));
         out += '.';
-        out.append(base64::encode(base64::string_to_byte(signature)));
+        out.append(base64::encode(string_to_byte(signature)));
 
         return index;
     }

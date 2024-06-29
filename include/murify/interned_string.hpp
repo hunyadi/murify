@@ -1,3 +1,13 @@
+/**
+ * murify: Efficient in-memory compression for URLs
+ * @see https://github.com/hunyadi/murify
+ *
+ * Copyright (c) 2024 Levente Hunyadi
+ *
+ * This work is licensed under the terms of the MIT license.
+ * For a copy, see <https://opensource.org/licenses/MIT>.
+ */
+
 #pragma once
 #include <cstring>
 #include <string_view>

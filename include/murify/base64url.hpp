@@ -1,3 +1,13 @@
+/**
+ * murify: Efficient in-memory compression for URLs
+ * @see https://github.com/hunyadi/murify
+ *
+ * Copyright (c) 2024 Levente Hunyadi
+ *
+ * This work is licensed under the terms of the MIT license.
+ * For a copy, see <https://opensource.org/licenses/MIT>.
+ */
+
 #pragma once
 #include <string>
 #include <string_view>
@@ -124,7 +134,9 @@ namespace murify
                 *p++ = static_cast<std::byte>(triplet & 0xff);
             }
 
-            if (input.size() % 4 == 3) {
+            switch (spare) {
+            case 2:
+            {
                 unsigned int a = decoding_table[static_cast<int>(input[i])];
                 unsigned int b = decoding_table[static_cast<int>(input[i + 1])];
                 unsigned int c = decoding_table[static_cast<int>(input[i + 2])];
@@ -135,7 +147,10 @@ namespace murify
                 unsigned int triplet = (a << 2 * 6) | (b << 6) | c;
                 *p++ = static_cast<std::byte>((triplet >> 10) & 0xff);
                 *p++ = static_cast<std::byte>((triplet >> 2) & 0xff);
-            } else if (input.size() % 4 == 2) {
+            }
+            break;
+            case 1:
+            {
                 unsigned int a = decoding_table[static_cast<int>(input[i])];
                 unsigned int b = decoding_table[static_cast<int>(input[i + 1])];
                 if (((a | b) & 64) != 0) {
@@ -144,6 +159,11 @@ namespace murify
 
                 unsigned int triplet = (a << 6) | b;
                 *p++ = static_cast<std::byte>((triplet >> 4) & 0xff);
+            }
+            break;
+            default:  // case 0:
+            {}
+            break;
             }
 
             return true;

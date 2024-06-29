@@ -1,3 +1,13 @@
+/**
+ * murify: Efficient in-memory compression for URLs
+ * @see https://github.com/hunyadi/murify
+ *
+ * Copyright (c) 2024 Levente Hunyadi
+ *
+ * This work is licensed under the terms of the MIT license.
+ * For a copy, see <https://opensource.org/licenses/MIT>.
+ */
+
 #include <murify/compactor.hpp>
 #include <murify/base64url.hpp>
 #include <array>
@@ -59,14 +69,17 @@ int main(int /*argc*/, char* /*argv*/[])
     check_encode("foob", "Zm9vYg");
     check_encode("fooba", "Zm9vYmE");
     check_encode("foobar", "Zm9vYmFy");
+    check_encode("extended-academic-research", "ZXh0ZW5kZWQtYWNhZGVtaWMtcmVzZWFyY2g");
 
     murify::PathCompactor pc;
+    check(pc, std::string_view());
     check(pc, "");
     check(pc, "0");
     check(pc, "123");
     check(pc, "4294967295");
     check(pc, "18446744073709551615");
     check(pc, "alma");
+    check(pc, "extended-academic-research");  // uses Base64 encoding
     check(pc, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.");
     check(pc, "/");
     check(pc, "1/");
@@ -78,6 +91,7 @@ int main(int /*argc*/, char* /*argv*/[])
     check(pc, "aa/bb/cc/dd/ee/ff/gg/hh/ii/jj/kk/ll/mm/nn/oo/pp/qq/rr/ss/tt/uu/vv/ww/xx/yy/zz/AA/BB/CC/DD/EE/FF/GG/HH/II/JJ/KK/LL/MM/NN/OO/PP/QQ/RR/SS/TT/UU/VV/WW/XX/YY/ZZ");
 
     murify::QueryCompactor qc;
+    check(qc, std::string_view());
     check(qc, "");
     check(qc, "value");
     check(qc, "key=0");

@@ -1,3 +1,13 @@
+/**
+ * murify: Efficient in-memory compression for URLs
+ * @see https://github.com/hunyadi/murify
+ *
+ * Copyright (c) 2024 Levente Hunyadi
+ *
+ * This work is licensed under the terms of the MIT license.
+ * For a copy, see <https://opensource.org/licenses/MIT>.
+ */
+
 #pragma once
 #include "base64url.hpp"
 #include "interned_string.hpp"
@@ -132,7 +142,7 @@ namespace murify
             }
 
             // string of decimal digits
-            unsigned long long number;
+            uint64_t number;
             std::from_chars_result result = std::from_chars(part.data(), part.data() + part.size(), number);
             if (result.ec == std::errc{} && result.ptr == part.data() + part.size()) {
                 if (number < 64) {
@@ -169,7 +179,7 @@ namespace murify
             }
 
             // base64
-            if (part.size() >= 16 && compact_base64(out, part)) {
+            if (part.size() >= 16 && part.size() % 4 == 0 && compact_base64(out, part)) {
                 continue;
             }
 
@@ -186,7 +196,7 @@ namespace murify
         using detail::Embedding, detail::Coding, detail::DataType;
         using detail::control_byte;
 
-        for (int k = 0; k < sizeof(separators); ++k) {
+        for (std::size_t k = 0; k < sizeof(separators); ++k) {
             if (sep != separators[k]) {
                 continue;
             }
@@ -208,7 +218,7 @@ namespace murify
         using detail::Embedding, detail::Coding, detail::DataType, detail::Encapsulation;
         using detail::control_byte;
 
-        unsigned int length = static_cast<unsigned int>(part.size());
+        uint32_t length = static_cast<unsigned int>(part.size());
         if (length < 64) {
             // short string with embedded length
             control_byte control;
@@ -272,7 +282,7 @@ namespace murify
         if (!base64::decode(part, raw)) {
             return false;
         }
-        unsigned int length = static_cast<unsigned int>(part.size());
+        unsigned int length = static_cast<unsigned int>(raw.size());
         unsigned int width = detail::get_integer_width(length);
 
         control_byte control;

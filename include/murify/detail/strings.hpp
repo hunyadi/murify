@@ -1,3 +1,13 @@
+/**
+ * murify: Efficient in-memory compression for URLs
+ * @see https://github.com/hunyadi/murify
+ *
+ * Copyright (c) 2024 Levente Hunyadi
+ *
+ * This work is licensed under the terms of the MIT license.
+ * For a copy, see <https://opensource.org/licenses/MIT>.
+ */
+
 #pragma once
 #include <string>
 #include <string_view>
@@ -7,24 +17,29 @@ namespace murify
 {
     namespace detail
     {
-        static std::string_view byte_to_string(const std::basic_string_view<std::byte>& in)
+        inline std::string_view byte_to_string(const std::basic_string_view<std::byte>& in)
         {
             return std::string_view(reinterpret_cast<const char*>(in.data()), in.size());
         }
 
-        static std::string_view byte_to_string(const std::basic_string<std::byte>& in)
+        inline std::string_view byte_to_string(const std::basic_string<std::byte>& in)
         {
             return byte_to_string(std::basic_string_view<std::byte>(in.data(), in.size()));
         }
 
-        static std::basic_string_view<std::byte> string_to_byte(const std::string_view& in)
+        inline std::basic_string_view<std::byte> string_to_byte(const std::string_view& in)
         {
             return std::basic_string_view<std::byte>(reinterpret_cast<const std::byte*>(in.data()), in.size());
         }
 
-        static std::basic_string_view<std::byte> string_to_byte(const std::string& in)
+        inline std::basic_string_view<std::byte> string_to_byte(const std::string& in)
         {
             return string_to_byte(std::string_view(in.data(), in.size()));
+        }
+
+        inline std::basic_string_view<std::byte> vector_to_byte(const std::vector<unsigned char>& in)
+        {
+            return std::basic_string_view<std::byte>(reinterpret_cast<const std::byte*>(in.data()), in.size());
         }
 
         /**

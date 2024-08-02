@@ -117,7 +117,14 @@ namespace murify
         auto parts = Tokenizer::split(str);
 
         std::basic_string<std::byte> out;
-        out.push_back(static_cast<std::byte>(parts.size()));
+        if (parts.size() < 128) {
+            out.push_back(static_cast<std::byte>(parts.size()));
+        } else {
+            auto lower = parts.size() & 0xff;
+            auto upper = parts.size() >> 8;
+            out.push_back(static_cast<std::byte>(0x80 | upper));
+            out.push_back(static_cast<std::byte>(lower));
+        }
 
         for (auto it = parts.begin(); it != parts.end(); ++it) {
             auto part = *it;
@@ -344,9 +351,16 @@ namespace murify
         std::vector<std::string> parts;
 
         std::size_t index = 0;
-        auto count = static_cast<std::size_t>(enc[index]);
-        parts.reserve(count);
+        std::size_t count = 0;
+        auto value = static_cast<std::size_t>(enc[index]);
+        if (value < 128) {
+            count = value;
+        } else {
+            ++index;
+            count = ((value & 0x7f) << 8) | static_cast<std::size_t>(enc[index]);
+        }
         ++index;
+        parts.reserve(count);
 
         for (std::size_t i = 0; i < count; ++i) {
             std::string part;

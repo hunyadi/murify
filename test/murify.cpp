@@ -106,6 +106,15 @@ int main(int /*argc*/, char* /*argv*/[])
     check(qc, "auth=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c");
     check(qc, "sig=SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c");
 
+    std::string str;
+    str.append("action=test");
+    for (std::size_t k = 0; k < 500; ++k) {
+        str.append("&");
+        str.append("value=");
+        str.append(std::to_string(k));
+    }
+    check(qc, str);
+
     murify::URLCompactor uc;
     check(uc, "g:h");
     check(uc, "http://a/b/c/g");

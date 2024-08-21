@@ -30,7 +30,8 @@ namespace murify
         static std::string join(const std::vector<std::string>& parts);
     };
 
-    /** URL compressor.
+    /**
+     * URL compressor.
      *
      * ```
      * 0 0  n n  n  n n n  --> embedded integer with value n
@@ -48,18 +49,34 @@ namespace murify
     template<typename Tokenizer>
     struct Compactor
     {
+        /** Transforms a URL into a compact representation. */
         std::basic_string<std::byte> compact(const std::string_view& str);
 
+        /** Transforms a URL into a compact representation. */
         std::basic_string<std::byte> compact(const std::string& str)
         {
             return compact(std::string_view(str.data(), str.size()));
         }
 
+        /** Expands a compact representation into a full URL. */
         std::string expand(const std::basic_string_view<std::byte>& enc);
 
+        /** Expands a compact representation into a full URL. */
         std::string expand(const std::basic_string<std::byte>& enc)
         {
             return expand(std::basic_string_view<std::byte>(enc.data(), enc.size()));
+        }
+
+        /** Provides access for de-serialization. */
+        interned_store& store()
+        {
+            return string_store;
+        }
+
+        /** Provides access for serialization. */
+        const interned_store& store() const
+        {
+            return string_store;
         }
 
     protected:
@@ -120,6 +137,7 @@ namespace murify
         if (parts.size() < 128) {
             out.push_back(static_cast<std::byte>(parts.size()));
         } else {
+            // most significant bit denotes a count of 128 or more
             auto lower = parts.size() & 0xff;
             auto upper = parts.size() >> 8;
             out.push_back(static_cast<std::byte>(0x80 | upper));

@@ -19,29 +19,40 @@ namespace murify
 {
     struct interned_store;
 
+    /**
+     * Encapsulates a string stored in an indexed array of strings, and referenced with its ordinal.
+     */
     struct interned_string
     {
         interned_string() = default;
 
+        /** Constructs an interned string from an ordinal assigned in an indexed array of strings. */
         explicit interned_string(uint32_t index)
             : _index(index)
         {}
 
+        /** The ordinal assigned to this interned string. */
         uint32_t index() const
         {
             return _index;
         }
 
+        /** The characters stored in the indexed array. */
         const char* data(const interned_store& store) const;
 
+        /** String length. */
         std::size_t size(const interned_store& store) const;
 
+        /** A string view over the characters stored in the indexed array. */
         std::string_view str(const interned_store& store) const;
 
     private:
         uint32_t _index = 0;
     };
 
+    /**
+     * Maps strings into ordinals of an indexed array of strings.
+     */
     struct interned_store
     {
         interned_store() = default;
@@ -53,16 +64,19 @@ namespace murify
             clear();
         }
 
+        /** The characters of a string stored in the indexed array. */
         const char* data(const interned_string& s) const
         {
             return _data[s.index()] + sizeof(std::size_t);
         }
 
+        /** String length. */
         std::size_t size(const interned_string& s) const
         {
             return *reinterpret_cast<const std::size_t*>(_data[s.index()]);
         }
 
+        /** A string view over the characters stored in the indexed array. */
         std::string_view str(const interned_string& s) const
         {
             return std::string_view(data(s), size(s));
@@ -107,6 +121,7 @@ namespace murify
             uint32_t _index;
         };
 
+        /** Number of strings stored in the indexed array. */
         std::size_t count() const
         {
             return _table.size();
@@ -122,6 +137,7 @@ namespace murify
             return const_iterator(*this, static_cast<uint32_t>(count()));
         }
 
+        /** Deallocates and removes all strings in the indexed array. */
         void clear()
         {
             _table.clear();
@@ -132,6 +148,7 @@ namespace murify
             _data.clear();
         }
 
+        /** Adds a new string to the indexed array and assigns an ordinal to the interned string. */
         interned_string intern(const std::string& str)
         {
             return intern(std::string_view(str.data(), str.size()));

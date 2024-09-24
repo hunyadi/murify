@@ -148,12 +148,22 @@ namespace murify
             _data.clear();
         }
 
-        /** Adds a new string to the indexed array and assigns an ordinal to the interned string. */
+        interned_string intern(const char* beg, const char* end)
+        {
+            return intern(std::string_view(beg, end - beg));
+        }
+
+        interned_string intern(const char* beg, std::size_t siz)
+        {
+            return intern(std::string_view(beg, siz));
+        }
+
         interned_string intern(const std::string& str)
         {
             return intern(std::string_view(str.data(), str.size()));
         }
 
+        /** Adds a new string to the indexed array and assigns an ordinal to the interned string. */
         interned_string intern(const std::string_view& str)
         {
             uint32_t index;

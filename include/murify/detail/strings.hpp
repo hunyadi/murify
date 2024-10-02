@@ -32,11 +32,6 @@ namespace murify
             return std::basic_string_view<std::byte>(reinterpret_cast<const std::byte*>(in.data()), in.size());
         }
 
-        inline std::basic_string_view<std::byte> string_to_byte(const std::string& in)
-        {
-            return string_to_byte(std::string_view(in.data(), in.size()));
-        }
-
         inline std::basic_string_view<std::byte> vector_to_byte(const std::vector<unsigned char>& in)
         {
             return std::basic_string_view<std::byte>(reinterpret_cast<const std::byte*>(in.data()), in.size());

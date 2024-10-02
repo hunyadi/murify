@@ -506,17 +506,17 @@ namespace murify
         return index;
     }
 
-    std::vector<std::string_view> PathTokenizer::split(const std::string_view& str)
+    inline std::vector<std::string_view> PathTokenizer::split(const std::string_view& str)
     {
         return detail::split(str, '/');
     }
 
-    std::string PathTokenizer::join(const std::vector<std::string>& parts)
+    inline std::string PathTokenizer::join(const std::vector<std::string>& parts)
     {
         return detail::join(parts, '/');
     }
 
-    std::vector<std::string_view> QueryTokenizer::split(const std::string_view& str)
+    inline std::vector<std::string_view> QueryTokenizer::split(const std::string_view& str)
     {
         auto key_value_pairs = detail::split(str, '&');
         std::vector<std::string_view> parts;
@@ -535,7 +535,7 @@ namespace murify
         return parts;
     }
 
-    std::string QueryTokenizer::join(const std::vector<std::string>& parts)
+    inline std::string QueryTokenizer::join(const std::vector<std::string>& parts)
     {
         std::vector<std::string> pieces;
         for (auto it = parts.begin(); it != parts.end(); ) {
@@ -555,12 +555,12 @@ namespace murify
         return detail::join(pieces, '&');
     }
 
-    std::vector<std::string_view> URLTokenizer::split(const std::string_view& str)
+    inline std::vector<std::string_view> URLTokenizer::split(const std::string_view& str)
     {
         return detail::tokenize(str, ":/?&=#");
     }
 
-    std::string URLTokenizer::join(const std::vector<std::string>& parts)
+    inline std::string URLTokenizer::join(const std::vector<std::string>& parts)
     {
         return detail::join(parts);
     }

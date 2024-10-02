@@ -36,19 +36,19 @@ static void check_encode(const std::string_view& str, const std::string_view& re
     std::string enc;
     if (!murify::base64::encode(in, enc)) {
         std::array<char, 256> buf;
-        int n = std::snprintf(buf.data(), buf.size(), "expected: %s; got encode error", ref.data());
-        throw std::runtime_error(std::string(buf.data(), n));
+        std::size_t n = std::snprintf(buf.data(), buf.size(), "expected: %s; got encode error", ref.data());
+        throw std::runtime_error(std::string(buf.data(), buf.data() + n));
     }
     if (enc != ref) {
         std::array<char, 256> buf;
-        int n = std::snprintf(buf.data(), buf.size(), "expected: %s; got: %s", ref.data(), enc.data());
-        throw std::runtime_error(std::string(buf.data(), n));
+        std::size_t n = std::snprintf(buf.data(), buf.size(), "expected: %s; got: %s", ref.data(), enc.data());
+        throw std::runtime_error(std::string(buf.data(), buf.data() + n));
     }
     std::basic_string<std::byte> dec;
     if (!murify::base64::decode(ref, dec)) {
         std::array<char, 256> buf;
-        int n = std::snprintf(buf.data(), buf.size(), "expected: %s; got decode error", ref.data());
-        throw std::runtime_error(std::string(buf.data(), n));
+        std::size_t n = std::snprintf(buf.data(), buf.size(), "expected: %s; got decode error", ref.data());
+        throw std::runtime_error(std::string(buf.data(), buf.data() + n));
     }
     std::string out;
     out.resize(dec.size());
@@ -56,7 +56,7 @@ static void check_encode(const std::string_view& str, const std::string_view& re
     if (out != str) {
         std::array<char, 256> buf;
         int n = std::snprintf(buf.data(), buf.size(), "expected: %s; got: %s", str.data(), out.data());
-        throw std::runtime_error(std::string(buf.data(), n));
+        throw std::runtime_error(std::string(buf.data(), buf.data() + n));
     }
 }
 

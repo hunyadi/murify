@@ -18,7 +18,7 @@ namespace murify
 {
     namespace detail
     {
-        inline unsigned int get_integer_width(uint64_t value)
+        inline unsigned int get_integer_width(std::uint64_t value)
         {
             if (value <= 0xffull) {
                 return 1;
@@ -39,7 +39,7 @@ namespace murify
             }
         }
 
-        inline unsigned int get_integer_width(uint32_t value)
+        inline unsigned int get_integer_width(std::uint32_t value)
         {
             if (value <= 0xff) {
                 return 1;
@@ -112,7 +112,7 @@ namespace murify
             }
         }
 
-        inline void write_integer(std::basic_string<std::byte>& data, unsigned int width, uint64_t value)
+        inline void write_integer(std::basic_string<std::byte>& data, unsigned int width, std::uint64_t value)
         {
             switch (width)
             {
@@ -137,7 +137,7 @@ namespace murify
             }
         }
 
-        inline void write_integer(std::basic_string<std::byte>& data, unsigned int width, uint32_t value)
+        inline void write_integer(std::basic_string<std::byte>& data, unsigned int width, std::uint32_t value)
         {
             switch (width)
             {

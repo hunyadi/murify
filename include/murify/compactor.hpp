@@ -21,6 +21,8 @@
 #include <charconv>
 #include <algorithm>
 #include <stdexcept>
+#include <cstddef>
+#include <cstdint>
 
 namespace murify
 {
@@ -101,7 +103,8 @@ namespace murify
     };
 
     struct PathCompactor : Compactor<PathTokenizer>
-    {};
+    {
+    };
 
     struct QueryTokenizer : BaseTokenizer
     {
@@ -110,7 +113,8 @@ namespace murify
     };
 
     struct QueryCompactor : Compactor<QueryTokenizer>
-    {};
+    {
+    };
 
     struct URLTokenizer : BaseTokenizer
     {
@@ -119,7 +123,8 @@ namespace murify
     };
 
     struct URLCompactor : Compactor<URLTokenizer>
-    {};
+    {
+    };
 
     template<typename Tokenizer>
     std::basic_string<std::byte> Compactor<Tokenizer>::compact(const std::string_view& str)
@@ -167,7 +172,7 @@ namespace murify
             }
 
             // string of decimal digits
-            uint64_t number;
+            std::uint64_t number;
             std::from_chars_result result = std::from_chars(part.data(), part.data() + part.size(), number);
             if (result.ec == std::errc{} && result.ptr == part.data() + part.size()) {
                 if (number < 64) {
@@ -243,7 +248,7 @@ namespace murify
         using detail::Embedding, detail::Coding, detail::DataType, detail::Encapsulation;
         using detail::control_byte;
 
-        uint32_t length = static_cast<unsigned int>(part.size());
+        std::uint32_t length = static_cast<unsigned int>(part.size());
         if (length < 64) {
             // short string with embedded length
             control_byte control;
@@ -275,7 +280,7 @@ namespace murify
         using detail::control_byte;
 
         interned_string s = string_store.intern(part);
-        uint32_t index = s.index();
+        std::uint32_t index = s.index();
         if (index < 64) {
             // interned string with embedded index
             control_byte control;
@@ -448,7 +453,7 @@ namespace murify
                 case DataType::string:
                     // interned string with externally specified index
                     width = control.prefixed_value.width + 1;
-                    uint32_t string_index = static_cast<uint32_t>(read_integer(enc.substr(index, width)));
+                    std::uint32_t string_index = static_cast<std::uint32_t>(read_integer(enc.substr(index, width)));
                     index += width;
                     out = interned_string(string_index).data(string_store);
                     break;

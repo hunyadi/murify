@@ -20,6 +20,8 @@
     "cmake.configureOnOpen": true,
     "C_Cpp.errorSquiggles": "enabled",
     "cSpell.words": [
+        "Hunyadi",
+        "Levente",
         "murify"
     ],
     "C_Cpp.vcFormat.newLine.beforeElse": false

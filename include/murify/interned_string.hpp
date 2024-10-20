@@ -9,11 +9,12 @@
  */
 
 #pragma once
-#include <cstring>
 #include <string_view>
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <cstdint>
+#include <cstring>
 
 namespace murify
 {
@@ -27,12 +28,13 @@ namespace murify
         interned_string() = default;
 
         /** Constructs an interned string from an ordinal assigned in an indexed array of strings. */
-        explicit interned_string(uint32_t index)
+        explicit interned_string(std::uint32_t index)
             : _index(index)
-        {}
+        {
+        }
 
         /** The ordinal assigned to this interned string. */
-        uint32_t index() const
+        std::uint32_t index() const
         {
             return _index;
         }
@@ -47,7 +49,7 @@ namespace murify
         std::string_view str(const interned_store& store) const;
 
     private:
-        uint32_t _index = 0;
+        std::uint32_t _index = 0;
     };
 
     /**
@@ -84,9 +86,10 @@ namespace murify
 
         struct const_iterator
         {
-            const_iterator(const interned_store& ref, uint32_t index)
+            const_iterator(const interned_store& ref, std::uint32_t index)
                 : _ref(ref), _index(index)
-            {}
+            {
+            }
 
             bool operator==(const const_iterator& op) const
             {
@@ -118,7 +121,7 @@ namespace murify
 
         private:
             const interned_store& _ref;
-            uint32_t _index;
+            std::uint32_t _index;
         };
 
         /** Number of strings stored in the indexed array. */
@@ -134,7 +137,7 @@ namespace murify
 
         const_iterator end() const
         {
-            return const_iterator(*this, static_cast<uint32_t>(count()));
+            return const_iterator(*this, static_cast<std::uint32_t>(count()));
         }
 
         /** Deallocates and removes all strings in the indexed array. */
@@ -166,7 +169,7 @@ namespace murify
         /** Adds a new string to the indexed array and assigns an ordinal to the interned string. */
         interned_string intern(const std::string_view& str)
         {
-            uint32_t index;
+            std::uint32_t index;
             auto it = _table.find(str);
             if (it != _table.end())
             {
@@ -178,7 +181,7 @@ namespace murify
                 char* s = ptr + sizeof(std::size_t);
                 std::memcpy(s, str.data(), str.size());
                 s[str.size()] = 0;
-                index = static_cast<uint32_t>(_data.size());
+                index = static_cast<std::uint32_t>(_data.size());
                 _data.push_back(ptr);
                 _table.insert(std::make_pair(std::string_view(s, str.size()), index));
             }
@@ -186,7 +189,7 @@ namespace murify
         }
 
     private:
-        std::unordered_map<std::string_view, uint32_t> _table;
+        std::unordered_map<std::string_view, std::uint32_t> _table;
         std::vector<const char*> _data;
     };
 
